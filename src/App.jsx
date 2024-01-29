@@ -41,13 +41,17 @@ function App() {
 		if (searchTermValue.trim() !== "") {
 			setSearchTerm(searchTermValue);
 			await getStreams(searchTermValue);
+			// Hide the iframe if it's currently shown
+			if (twitchEmbedInitialized) {
+				setShowStreams(true); // Show the streams again
+				setTwitchEmbedInitialized(false); // Reset the initialized state
+			}
 		} else {
-			window.location.reload()
+			window.location.reload(); // Reload the page if search term is empty
 		}
 	};
 
 	const handleProfileClick = (index) => {
-
 		const selectedProfile = searchTermValue ? searchResults[index] : streamsData[index];
 
 		if (selectedProfile && selectedProfile.display_name) {
@@ -60,17 +64,25 @@ function App() {
 	};
 
 	const initializeTwitchEmbed = (channelName) => {
-
 		if (!channelName) {
 			console.error('Invalid channelName:', channelName);
 			return;
 		}
 
+		// Remove the existing Twitch embed if it exists
+		if (twitchEmbedInitialized) {
+			const twitchEmbedContainer = document.getElementById('twitch-embed');
+			twitchEmbedContainer.innerHTML = ''; // Remove the iframe
+		}
+
+		// Initialize the Twitch embed with the new channel name
 		const twitchEmbed = new Twitch.Embed('twitch-embed', {
 			width: '100%',
 			height: window.innerHeight - 50,
 			channel: channelName,
 		});
+
+		setTwitchEmbedInitialized(true);
 	};
 
 	// Top 20 streams
@@ -80,7 +92,7 @@ function App() {
 				const authorizationObject = await getTwitchAuthorization();
 				const { access_token } = authorizationObject;
 
-				const response = await fetch('https://api.twitch.tv/helix/streams', {
+				const response = await fetch('https://api.twitch.tv/helix/streams?first=100', {
 					headers: {
 						'Client-ID': clientId,
 						'Authorization': `Bearer ${access_token}`,
@@ -134,7 +146,7 @@ function App() {
 			}
 
 			const data = await response.json();
-			data.data.sort((a,b) => {return a.display_name.toUpperCase() != username.toUpperCase()});
+			data.data.sort((a, b) => { return a.display_name.toUpperCase() != username.toUpperCase() });
 
 			const renderSearchResults = (searchResultsData) => {
 				setSearchResults(searchResultsData.map((result) => ({
@@ -181,9 +193,12 @@ function App() {
 					<div className='nav-item'><IconBxChat width='24px' height='24px' /></div>
 					<div className='nav-item'><IconBxDiamond width='24px' height='24px' /></div>
 					<div className='nav-item'><IconBxsBatteryCharging width='24px' height='24px' /></div>
-					<div className='nav-item'><img id='profile-img' src="./hampter-fd851f66e508138ed814373c9d8568d4-meme.jpeg" alt="profile-picture" /></div>
+					<div className='nav-item'>
+					<a href="/auth/twitch">Connect with Twitch!</a>
+						<img id='profile-img' alt="profile-picture" />
+					</div>
 				</div>
-			</header>
+			</header >
 
 			<nav>
 				<IconBxHeart id="heart-icon" width='20px' height='20px' />
@@ -216,7 +231,7 @@ function App() {
 					searchResults.map((result, index) => (
 						<div key={index} className="stream-profile-container" onClick={() => handleProfileClick(index)}>
 							<div className="image-profile-container">
-								<img src={result.thumbnail} alt={result.display_name}/>
+								<img src={result.thumbnail} alt={result.display_name} />
 								<div className={result.liveBadge ? 'border' : 'hidden'}></div>
 							</div>
 							<div className={"text=profile-container " + (result.liveBadge ? 'live' : '')}>
@@ -240,7 +255,7 @@ function App() {
 											fill="currentColor"
 										></path>
 									</svg>
-									<span className='view-count'>{stream.viewer_count.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}</span>
+									<span className='view-count'>{stream.viewer_count.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}&nbsp;Kijkers</span>
 								</div>
 								<div className="text-streams-container">
 									<h4>{stream.title}</h4>
